@@ -47,6 +47,8 @@ Here are your rules of engagement:
 2.  **Be Creative:** Find an unexpected angle. Connect the word to a funny metaphor or a ridiculous scenario.
 3.  **Be Personal (to the transcript):** The roast should feel like it was tailor-made for the person speaking in the video.
 4.  **Punch Up:** The humor should be sharp, not just mean. It's a roast, not a hate speech.
+5.  **Be Concise:** The best roasts are short and to the point. No need for a long story.
+6.  **Don't Quote:** Do not reference the timestamps or quote the transcript directly. Use it for context only.
 
 Make it so good they'll have to laugh through their tears. Now, let's get to work.
 
