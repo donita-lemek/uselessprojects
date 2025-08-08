@@ -1,24 +1,75 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { ChangeEvent } from 'react';
 import { analyzeVideo, type WordFrequency } from '@/ai/flows/analyze-video';
+import { generateRoast } from '@/ai/flows/generate-roast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/icons';
-import { LoaderCircle, Upload } from 'lucide-react';
+import { LoaderCircle, Upload, Wand2, Copy, Share2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function MainPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<{ transcript: string, wordFrequencies: WordFrequency[] } | null>(null);
   const [videoUrl, setVideoUrl] = useState('');
+  const [selectedWord, setSelectedWord] = useState<WordFrequency | null>(null);
+  const [isRoasting, setIsRoasting] = useState(false);
+  const [roast, setRoast] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (analysisResult && analysisResult.wordFrequencies.length > 0) {
+      setSelectedWord(analysisResult.wordFrequencies[0]);
+    } else {
+      setSelectedWord(null);
+    }
+    setRoast(null);
+  }, [analysisResult]);
+
+
+  useEffect(() => {
+    if (selectedWord && analysisResult) {
+      handleRoastGeneration(selectedWord.word, analysisResult.transcript);
+    }
+  }, [selectedWord, analysisResult]);
+
+  const handleRoastGeneration = async (word: string, transcript: string) => {
+    setIsRoasting(true);
+    setRoast(null);
+    try {
+      const result = await generateRoast({ word, transcript });
+      setRoast(result.roast);
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: 'destructive',
+        title: 'Roast Failed',
+        description: 'Could not generate a roast. Please try a different word.',
+      });
+    } finally {
+      setIsRoasting(false);
+    }
+  };
+
+  const handleCopyRoast = () => {
+    if (roast) {
+      navigator.clipboard.writeText(roast);
+      toast({
+        title: 'Copied to clipboard!',
+        description: 'Your roast is ready to be shared.',
+      });
+    }
+  };
+
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -110,7 +161,8 @@ export function MainPage() {
       </header>
 
       <main className="flex-1 p-4 md:p-8">
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
             <Card className="overflow-hidden shadow-2xl shadow-primary/10">
               <div className="aspect-video bg-black flex items-center justify-center">
                 {isAnalyzing && !analysisResult ? (
@@ -126,26 +178,72 @@ export function MainPage() {
             </Card>
 
             <AnimatePresence>
+                {(isRoasting || roast) && (
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                           <Wand2 className="text-primary" /> The Roast
+                        </CardTitle>
+                        <CardDescription>
+                          AI-generated roast based on the word <span className="font-bold text-primary">{`"${selectedWord?.word}"`}</span>.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {isRoasting ? (
+                           <div className="space-y-2">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-3/4" />
+                          </div>
+                        ) : (
+                          <blockquote className="border-l-4 border-primary pl-4 italic text-lg">
+                            {roast}
+                          </blockquote>
+                        )}
+                      </CardContent>
+                       {roast && !isRoasting && (
+                        <div className="p-6 pt-0 flex justify-end gap-2">
+                            <Button variant="ghost" size="sm" onClick={handleCopyRoast}>
+                                <Copy className="mr-2"/>
+                                Copy
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => navigator.share({ title: 'Check out this roast!', text: roast })}>
+                                <Share2 className="mr-2"/>
+                                Share
+                            </Button>
+                        </div>
+                        )}
+                    </Card>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+          </div>
+          
+          <div className="space-y-8">
+             <AnimatePresence>
               {analysisResult && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                   <Card>
                     <CardHeader>
                       <CardTitle>Top Words</CardTitle>
                       <CardDescription>
-                        Here are the most frequently used words in your video.
+                        Click a word to generate a new roast.
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <ScrollArea className="h-48">
+                      <ScrollArea className="h-96">
                         <div className="space-y-2 pr-4">
                           {analysisResult.wordFrequencies.map((item, index) => (
-                            <div key={item.word} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                            <button key={item.word}  onClick={() => setSelectedWord(item)} disabled={isRoasting}
+                            className={cn("w-full flex items-center justify-between p-2 rounded-lg transition-colors", 
+                            selectedWord?.word === item.word ? 'bg-primary/20' : 'hover:bg-muted/50')}>
                                <div className="flex items-center gap-4">
-                                <span className="text-sm font-bold w-6 text-center text-primary">{index + 1}.</span>
+                                <span className={cn("text-sm font-bold w-6 text-center", selectedWord?.word === item.word ? 'text-primary' : '')}>{index + 1}.</span>
                                 <span className="text-lg font-medium capitalize">{item.word}</span>
                               </div>
-                              <span className="text-sm text-muted-foreground font-mono px-2 py-1 rounded-md bg-background">{item.count} times</span>
-                            </div>
+                              <span className="text-sm text-muted-foreground font-mono px-2 py-1 rounded-md bg-background">{item.count}</span>
+                            </button>
                           ))}
                         </div>
                       </ScrollArea>
@@ -154,6 +252,7 @@ export function MainPage() {
                 </motion.div>
               )}
             </AnimatePresence>
+          </div>
         </div>
       </main>
     </div>
