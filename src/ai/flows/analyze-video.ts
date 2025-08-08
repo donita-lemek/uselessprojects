@@ -16,6 +16,12 @@ const WordFrequencySchema = z.object({
   count: z.number().describe('The number of times the word appears in the transcript.'),
 });
 
+const TimedWordSchema = z.object({
+    word: z.string().describe('The transcribed word.'),
+    startTime: z.number().describe('The start time of the word in seconds.'),
+    endTime: z.number().describe('The end time of the word in seconds.'),
+});
+
 const AnalyzeVideoInputSchema = z.object({
   videoDataUri: z
     .string()
@@ -26,11 +32,12 @@ const AnalyzeVideoInputSchema = z.object({
 export type AnalyzeVideoInput = z.infer<typeof AnalyzeVideoInputSchema>;
 
 const AnalyzeVideoOutputSchema = z.object({
-  transcript: z.string().describe('The full transcript of the video.'),
+  timedTranscript: z.array(TimedWordSchema).describe('The full transcript of the video with timestamps for each word.'),
   wordFrequencies: z.array(WordFrequencySchema).describe('An array of the 10 most frequent words and their counts.'),
 });
 export type AnalyzeVideoOutput = z.infer<typeof AnalyzeVideoOutputSchema>;
 export type WordFrequency = z.infer<typeof WordFrequencySchema>;
+export type TimedWord = z.infer<typeof TimedWordSchema>;
 
 // Common English stop words.
 const STOP_WORDS = new Set([
@@ -49,8 +56,8 @@ const STOP_WORDS = new Set([
 const transcriptionPrompt = ai.definePrompt({
     name: 'transcriptionPrompt',
     input: { schema: AnalyzeVideoInputSchema },
-    output: { schema: z.object({ transcript: z.string() }) },
-    prompt: `Provide a detailed transcript for the following video.
+    output: { schema: z.object({ timedTranscript: z.array(TimedWordSchema) }) },
+    prompt: `Provide a detailed transcript for the following video. You must provide the start and end time in seconds for each word spoken.
 
 Video: {{media url=videoDataUri}}`
 });
@@ -65,16 +72,16 @@ const analyzeVideoFlow = ai.defineFlow(
   async (input) => {
     const { output } = await transcriptionPrompt(input);
 
-    if (!output || !output.transcript) {
+    if (!output || !output.timedTranscript) {
         throw new Error('Failed to generate transcript.');
     }
     
-    const transcript = output.transcript;
-    const words = transcript.toLowerCase().match(/\b\w+\b/g) || [];
+    const timedTranscript = output.timedTranscript;
     const frequencies = new Map<string, number>();
 
-    for (const word of words) {
-        if (!STOP_WORDS.has(word) && isNaN(parseInt(word))) {
+    for (const entry of timedTranscript) {
+        const word = entry.word.toLowerCase().replace(/[^a-z]/g, '');
+        if (word && !STOP_WORDS.has(word) && isNaN(parseInt(word))) {
             frequencies.set(word, (frequencies.get(word) || 0) + 1);
         }
     }
@@ -86,7 +93,7 @@ const analyzeVideoFlow = ai.defineFlow(
     const wordFrequencies = sortedFrequencies.map(([word, count]) => ({ word, count }));
 
     return {
-      transcript,
+      timedTranscript,
       wordFrequencies,
     };
   }

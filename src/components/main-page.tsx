@@ -2,13 +2,13 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react';
 import type { ChangeEvent } from 'react';
-import { analyzeVideo, type WordFrequency } from '@/ai/flows/analyze-video';
+import { analyzeVideo, type WordFrequency, type TimedWord } from '@/ai/flows/analyze-video';
 import { generateRoast } from '@/ai/flows/generate-roast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/icons';
-import { LoaderCircle, Upload, Wand2, Copy, Share2, MessageSquareQuote } from 'lucide-react';
+import { LoaderCircle, Upload, Wand2, Copy, Share2, MessageSquareQuote, PlayCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -18,29 +18,25 @@ import { Separator } from '@/components/ui/separator';
 
 export function MainPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<{ transcript: string, wordFrequencies: WordFrequency[] } | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<{ timedTranscript: TimedWord[], wordFrequencies: WordFrequency[] } | null>(null);
   const [videoUrl, setVideoUrl] = useState('');
   const [selectedWord, setSelectedWord] = useState<WordFrequency | null>(null);
   const [isRoasting, setIsRoasting] = useState(false);
   const [roast, setRoast] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
   
   const wordClips = useMemo(() => {
     if (!analysisResult || !selectedWord) return [];
     
-    const { transcript } = analysisResult;
+    const { timedTranscript } = analysisResult;
     const { word } = selectedWord;
     
-    // Improved sentence splitting regex
-    const sentences = transcript.match(/[^.!?]+[.!?]+/g) || [];
-    
-    const clips = sentences
-      .filter(sentence => new RegExp(`\\b${word}\\b`, 'i').test(sentence))
-      .map(sentence => sentence.trim());
-      
-    return clips;
+    return timedTranscript.filter(
+      (timedWord) => timedWord.word.toLowerCase() === word.toLowerCase()
+    );
   }, [analysisResult, selectedWord]);
 
 
@@ -58,15 +54,15 @@ export function MainPage() {
 
   useEffect(() => {
     if (selectedWord && analysisResult) {
-      handleRoastGeneration(selectedWord.word, analysisResult.transcript);
+      handleRoastGeneration(selectedWord.word, analysisResult.timedTranscript);
     }
   }, [selectedWord, analysisResult]);
 
-  const handleRoastGeneration = async (word: string, transcript: string) => {
+  const handleRoastGeneration = async (word: string, timedTranscript: TimedWord[]) => {
     setIsRoasting(true);
     setRoast(null);
     try {
-      const result = await generateRoast({ word, transcript });
+      const result = await generateRoast({ word, timedTranscript });
       setRoast(result.roast);
     } catch (error) {
       console.error(error);
@@ -89,7 +85,6 @@ export function MainPage() {
       });
     }
   };
-
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -133,6 +128,20 @@ export function MainPage() {
     }
   };
 
+  const handleClipPlay = (startTime: number) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = startTime;
+      videoRef.current.play();
+
+      // Optional: stop after a few seconds
+      const stopTimeout = setTimeout(() => {
+        videoRef.current?.pause();
+      }, 4000); // Plays for 4 seconds
+
+      // Cleanup timeout on component unmount or new clip play
+      return () => clearTimeout(stopTimeout);
+    }
+  };
 
   if (!videoUrl && !isAnalyzing) {
     return (
@@ -198,7 +207,7 @@ export function MainPage() {
                     <p className="text-muted-foreground">This may take a moment.</p>
                   </div>
                 ) : (
-                  <video src={videoUrl} controls className="w-full h-full" />
+                  <video ref={videoRef} src={videoUrl} controls className="w-full h-full" />
                 )}
               </div>
             </Card>
@@ -300,20 +309,25 @@ export function MainPage() {
                         <MessageSquareQuote className="text-primary"/> Word Clips
                       </CardTitle>
                       <CardDescription>
-                        Snippets from the transcript where <span className="font-bold text-primary">{`"${selectedWord?.word}"`}</span> was mentioned.
+                        Click a timestamp to play the clip where <span className="font-bold text-primary">{`"${selectedWord?.word}"`}</span> was mentioned.
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <ScrollArea className="h-60">
-                        <div className="space-y-4 pr-4">
+                        <div className="space-y-2 pr-4">
                           {wordClips.map((clip, index) => (
-                            <div key={index}>
-                              <blockquote 
-                                className="text-sm italic text-muted-foreground"
-                                dangerouslySetInnerHTML={{ __html: clip.replace(new RegExp(`\\b(${selectedWord?.word})\\b`, 'gi'), '<strong class="text-foreground">$1</strong>') }}
-                              />
-                               {index < wordClips.length - 1 && <Separator className="mt-4" />}
-                            </div>
+                            <button
+                                key={index}
+                                onClick={() => handleClipPlay(clip.startTime)}
+                                className="w-full flex items-center justify-between p-2 rounded-lg transition-colors text-left hover:bg-muted/50"
+                              >
+                                <div className='flex items-center gap-2'>
+                                  <PlayCircle className="text-primary w-5 h-5"/>
+                                  <span className="text-sm">
+                                    Mention at <span className="font-mono text-primary">{clip.startTime.toFixed(1)}s</span>
+                                  </span>
+                                </div>
+                            </button>
                           ))}
                         </div>
                       </ScrollArea>

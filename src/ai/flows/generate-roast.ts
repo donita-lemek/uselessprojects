@@ -10,10 +10,11 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import type { TimedWord } from './analyze-video';
 
 const GenerateRoastInputSchema = z.object({
   word: z.string().describe('The word to base the roast on.'),
-  transcript: z.string().describe('The full transcript of the video for context.'),
+  timedTranscript: z.custom<TimedWord[]>().describe('The full transcript of the video for context.'),
 });
 export type GenerateRoastInput = z.infer<typeof GenerateRoastInputSchema>;
 
@@ -35,7 +36,7 @@ Make it burn!
 
 Word: {{{word}}}
 Transcript:
-{{{transcript}}}
+{{{jsonStringify timedTranscript}}}
 `,
     config: {
         model: 'googleai/gemini-2.0-flash',
