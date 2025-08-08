@@ -27,7 +27,7 @@ export type AnalyzeVideoInput = z.infer<typeof AnalyzeVideoInputSchema>;
 
 const AnalyzeVideoOutputSchema = z.object({
   transcript: z.string().describe('The full transcript of the video.'),
-  wordFrequencies: z.array(WordFrequencySchema).describe('An array of the 10 most frequent words and their timestamps.'),
+  wordFrequencies: z.array(WordFrequencySchema).describe('An array of the 10 most frequent words and their counts.'),
 });
 export type AnalyzeVideoOutput = z.infer<typeof AnalyzeVideoOutputSchema>;
 export type WordFrequency = z.infer<typeof WordFrequencySchema>;
@@ -66,11 +66,12 @@ Video: {{media url=videoDataUri}}`;
     
     // Step 2: Process the transcript in code for accuracy.
     const wordCounts: Record<string, number> = {};
+    const commonWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'is', 'are', 'was', 'were', 'in', 'on', 'at', 'of', 'to', 'for', 'with', 'by', 'as', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'that', 'this', 'so', 'be', 'from', 'out', 'up', 'down', 'like', 'just', 'me']);
 
     const words = transcript.toLowerCase().match(/\b\w+'?\w*\b/g) || [];
 
     for (const word of words) {
-        if (isNaN(Number(word))) { // filter out plain numbers
+        if (!commonWords.has(word) && isNaN(Number(word))) { // filter out common words and plain numbers
             wordCounts[word] = (wordCounts[word] || 0) + 1;
         }
     }
