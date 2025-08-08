@@ -65,30 +65,33 @@ Video: {{media url=videoDataUri}}`;
     const { transcript } = transcriptOutput;
 
     // Step 2: Process the transcript in code for accuracy.
-    const stopWords = new Set(['the', 'a', 'is', 'in', 'it', 'and', 'of', 'to', 'for', 'i', 'you', 'he', 'she', 'they', 'we', 'was', 'are', 'at', 'be', 'but', 'by', 'on', 'with', 'that', 'this', 'from', 'or', 'as']);
+    const stopWords = new Set(['the', 'a', 'is', 'in', 'it', 'and', 'of', 'to', 'for', 'i', 'you', 'he', 'she', 'they', 'we', 'was', 'are', 'at', 'be', 'but', 'by', 'on', 'with', 'that', 'this', 'from', 'or', 'as', 'an', 'my', 'so', 'if', 'me', 'not', 'your', 'just', 'do']);
     const wordCounts: Record<string, { count: number, timestamps: number[] }> = {};
 
-    const lineRegex = /\[(\d{2}):(\d{2}):(\d{2})\]\s*(.*)/g;
-    let match;
+    const lines = transcript.split('\n').filter(line => line.trim() !== '');
+    
+    for (const line of lines) {
+        const match = line.match(/\[(\d{2}):(\d{2}):(\d{2})\]\s*(.*)/);
+        if (match) {
+            const [, hours, minutes, seconds, text] = match;
+            const timestamp = parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
+            
+            const words = text.toLowerCase().match(/\b\w+'?\w*\b/g) || [];
 
-    while ((match = lineRegex.exec(transcript)) !== null) {
-        const [, hours, minutes, seconds, text] = match;
-        const timestamp = parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
-        
-        const words = text.toLowerCase().match(/\b\w+\b/g) || [];
-
-        for (const word of words) {
-            if (!stopWords.has(word)) {
-                if (!wordCounts[word]) {
-                    wordCounts[word] = { count: 0, timestamps: [] };
-                }
-                wordCounts[word].count++;
-                if (!wordCounts[word].timestamps.includes(timestamp)) {
-                   wordCounts[word].timestamps.push(timestamp);
+            for (const word of words) {
+                if (!stopWords.has(word) && isNaN(Number(word))) { // filter out stopwords and plain numbers
+                    if (!wordCounts[word]) {
+                        wordCounts[word] = { count: 0, timestamps: [] };
+                    }
+                    wordCounts[word].count++;
+                    if (!wordCounts[word].timestamps.includes(timestamp)) {
+                       wordCounts[word].timestamps.push(timestamp);
+                    }
                 }
             }
         }
     }
+
 
     const sortedWords = Object.entries(wordCounts)
         .sort(([, a], [, b]) => b.count - a.count)
