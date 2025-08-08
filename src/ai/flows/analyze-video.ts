@@ -32,6 +32,29 @@ const AnalyzeVideoOutputSchema = z.object({
 export type AnalyzeVideoOutput = z.infer<typeof AnalyzeVideoOutputSchema>;
 export type WordFrequency = z.infer<typeof WordFrequencySchema>;
 
+// Common English stop words.
+const STOP_WORDS = new Set([
+  'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', 'your', 'yours', 'yourself', 'yourselves',
+  'he', 'him', 'his', 'himself', 'she', 'her', 'hers', 'herself', 'it', 'its', 'itself', 'they', 'them', 'their',
+  'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this', 'that', 'these', 'those', 'am', 'is', 'are',
+  'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an',
+  'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 'at', 'by', 'for', 'with', 'about',
+  'against', 'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up',
+  'down', 'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when',
+  'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no',
+  'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don',
+  'should', 'now', 've', 'll', 'm', 're', 'y'
+]);
+
+const transcriptionPrompt = ai.definePrompt({
+    name: 'transcriptionPrompt',
+    input: { schema: AnalyzeVideoInputSchema },
+    prompt: `Provide a detailed transcript for the following video.
+
+Video: {{media url=videoDataUri}}`
+});
+
+
 const analyzeVideoFlow = ai.defineFlow(
   {
     name: 'analyzeVideoFlow',
@@ -39,18 +62,30 @@ const analyzeVideoFlow = ai.defineFlow(
     outputSchema: AnalyzeVideoOutputSchema,
   },
   async (input) => {
-    // This is a mock implementation.
-    console.log('Analyzing video (mock):', input.videoDataUri.substring(0, 50));
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const { output: transcript } = await transcriptionPrompt(input);
+
+    if (!transcript) {
+        throw new Error('Failed to generate transcript.');
+    }
+
+    const words = transcript.toLowerCase().match(/\b\w+\b/g) || [];
+    const frequencies = new Map<string, number>();
+
+    for (const word of words) {
+        if (!STOP_WORDS.has(word) && isNaN(parseInt(word))) {
+            frequencies.set(word, (frequencies.get(word) || 0) + 1);
+        }
+    }
+
+    const sortedFrequencies = Array.from(frequencies.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+
+    const wordFrequencies = sortedFrequencies.map(([word, count]) => ({ word, count }));
+
     return {
-      transcript: "This is a mock transcript. The user said girlfriend many times. This is just a test.",
-      wordFrequencies: [
-        { word: 'girlfriend', count: 10 },
-        { word: 'like', count: 8 },
-        { word: 'actually', count: 5 },
-        { word: 'project', count: 4 },
-        { word: 'really', count: 3 },
-      ]
+      transcript,
+      wordFrequencies,
     };
   }
 );
