@@ -58,11 +58,15 @@ npm install
 
 <img width="1280" height="832" alt="Screenshot 2025-08-09 at 4 49 01 AM" src="https://github.com/user-attachments/assets/22ff5372-902b-4a72-920a-11274ffb0292" />
 <img width="1280" height="832" alt="Screenshot 2025-08-09 at 4 49 11 AM" src="https://github.com/user-attachments/assets/bf4146fb-882f-4e30-9faa-1cf3210fafcb" />
-<img width="1280" height="832" alt="Screenshot 2025-08-09 at 4 49 11 AM" src="https://github.com/user-attachm
-ents/assets/568fe7a7-c7a4-4e48-9604-57c7ceed544b" />
+<img width="1280" height="832" alt="Screenshot 2025-08-09 at 4 49 11 AM" src="https://github.com/user-attachments/assets/568fe7a7-c7a4-4e48-9604-57c7ceed544b" />
 ## App Flow
 <img width="1024" height="1536" alt="ChatGPT Image Aug 9, 2025, 04_57_59 AM" src="https://github.com/user-attachments/assets/dfccad84-8199-40f5-ac0d-637042f200b4" />
 
+## Project Demo
 
+[REC-20250809050559.mp4.zip](https://github.com/user-attachments/files/21693403/REC-20250809050559.mp4.zip)
 
+The above is a zip file. Please extract it to view it.
+
+## Single Contribtor :Donita Lemek
 
