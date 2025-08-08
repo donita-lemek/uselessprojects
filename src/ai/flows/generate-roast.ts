@@ -31,6 +31,7 @@ const roastPrompt = ai.definePrompt({
         transcriptJson: z.string(),
     }) },
     output: { schema: GenerateRoastOutputSchema },
+    model: 'googleai/gemini-2.0-flash',
     prompt: `You are a professional comedian known for your sharp, witty roasts.
 You will be given a word and the full transcript of a video where that word was spoken.
 Your task is to generate a cutting, concise, and humorous roast based on the given word and its context in the transcript.
@@ -42,7 +43,6 @@ Transcript:
 {{{transcriptJson}}}
 `,
     config: {
-        model: 'googleai/gemini-2.0-flash',
         safetySettings: [
             {
                 category: 'HARM_CATEGORY_HATE_SPEECH',
