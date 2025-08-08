@@ -10,16 +10,6 @@ import { Logo } from '@/components/icons';
 import { LoaderCircle, Upload } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-
-const chartConfig = {
-  count: {
-    label: "Count",
-    color: "hsl(var(--primary))",
-  },
-} satisfies ChartConfig;
-
 
 export function MainPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -139,38 +129,21 @@ export function MainPage() {
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                   <Card>
                     <CardHeader>
-                      <CardTitle>Analysis Results</CardTitle>
+                      <CardTitle>Top Words</CardTitle>
                       <CardDescription>
                         Here are the most frequently used words in your video.
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <h3 className="font-semibold mb-4">Word Frequencies</h3>
-                        <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-                           <BarChart accessibilityLayer data={analysisResult.wordFrequencies}>
-                              <CartesianGrid vertical={false} />
-                              <XAxis
-                                dataKey="word"
-                                tickLine={false}
-                                tickMargin={10}
-                                axisLine={false}
-                              />
-                              <YAxis
-                                dataKey="count"
-                                type="number"
-                                allowDecimals={false}
-                                tickLine={false}
-                                axisLine={false}
-                                tickMargin={10}
-                               />
-                               <ChartTooltip
-                                cursor={false}
-                                content={<ChartTooltipContent hideLabel />}
-                              />
-                              <Bar dataKey="count" fill="var(--color-count)" radius={4} />
-                            </BarChart>
-                        </ChartContainer>
+                    <CardContent>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        {analysisResult.wordFrequencies.map((item) => (
+                          <Card key={item.word} className="text-center hover:bg-muted transition-colors">
+                            <CardContent className="p-4 flex flex-col items-center justify-center gap-2">
+                              <p className="text-2xl font-bold text-primary">{item.count}</p>
+                              <p className="text-sm font-medium text-muted-foreground capitalize">{item.word}</p>
+                            </CardContent>
+                          </Card>
+                        ))}
                       </div>
                     </CardContent>
                   </Card>
