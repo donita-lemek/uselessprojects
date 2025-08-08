@@ -21,7 +21,7 @@ const AnalyzeVideoInputSchema = z.object({
   videoDataUri: z
     .string()
     .describe(
-      "A video file, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "A video file, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'"
     ),
 });
 export type AnalyzeVideoInput = z.infer<typeof AnalyzeVideoInputSchema>;
@@ -33,58 +33,29 @@ const AnalyzeVideoOutputSchema = z.object({
 export type AnalyzeVideoOutput = z.infer<typeof AnalyzeVideoOutputSchema>;
 export type WordFrequency = z.infer<typeof WordFrequencySchema>;
 
-// New, simpler flow to just get the transcript
-const transcribeVideoFlow = ai.defineFlow(
+// This flow was too complex and was failing.
+// We are replacing it with two simpler flows and an orchestrator function.
+const analyzeVideoFlow = ai.defineFlow(
   {
-    name: 'transcribeVideoFlow',
+    name: 'analyzeVideoFlow',
     inputSchema: AnalyzeVideoInputSchema,
-    outputSchema: z.object({
-      transcript: z.string().describe('The full transcript of the video, with timestamps for each utterance.'),
-    }),
+    outputSchema: AnalyzeVideoOutputSchema,
   },
   async (input) => {
-    const prompt = `You are a video transcription expert. Transcribe the following video and provide timestamps for each utterance.
-    Video: {{media url=videoDataUri}}`;
+    const prompt = `You are an expert video analyst. Analyze the provided video to perform two tasks:
+1.  Generate a complete and accurate transcript of all spoken words, including timestamps for each utterance.
+2.  Analyze the full transcript to identify the 10 most frequently used words. For each of these words, provide a count of its occurrences and an array of the precise timestamps (in seconds) where it is spoken in the video.
+
+Video: {{media url=videoDataUri}}`;
 
     const {output} = await ai.generate({
         prompt: prompt,
         input: input,
         output: {
-            schema: z.object({
-                transcript: z.string().describe('The full transcript of the video, with timestamps for each utterance.'),
-            }),
+            schema: AnalyzeVideoOutputSchema,
         },
     });
 
-    return output!;
-  }
-);
-
-// New, simpler flow to analyze the transcript text
-const analyzeTranscriptFlow = ai.defineFlow(
-  {
-    name: 'analyzeTranscriptFlow',
-    inputSchema: z.object({
-      transcript: z.string(),
-    }),
-    outputSchema: z.object({
-      wordFrequencies: z.array(WordFrequencySchema).describe('An array of the most frequent words and their timestamps.'),
-    }),
-  },
-  async (input) => {
-    const prompt = `You are an expert text analyst. Analyze the transcript to identify all words. Count the occurrences of each word. For the 10 most frequent words, list all the timestamps (in seconds from the start of the video) where each word is spoken.
-    Transcript:
-    {{{transcript}}}`;
-
-    const {output} = await ai.generate({
-        prompt: prompt,
-        input: input,
-        output: {
-            schema: z.object({
-                wordFrequencies: z.array(WordFrequencySchema).describe('An array of the most frequent words and their timestamps.'),
-            }),
-        },
-    });
     return output!;
   }
 );
@@ -92,7 +63,5 @@ const analyzeTranscriptFlow = ai.defineFlow(
 
 // Main function that orchestrates the two new flows
 export async function analyzeVideo(input: AnalyzeVideoInput): Promise<AnalyzeVideoOutput> {
-  const { transcript } = await transcribeVideoFlow(input);
-  const { wordFrequencies } = await analyzeTranscriptFlow({ transcript });
-  return { transcript, wordFrequencies };
+    return analyzeVideoFlow(input);
 }
