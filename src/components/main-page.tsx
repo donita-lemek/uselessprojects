@@ -10,6 +10,7 @@ import { Logo } from '@/components/icons';
 import { LoaderCircle, Upload } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 export function MainPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -135,17 +136,24 @@ export function MainPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <ol className="space-y-1">
-                        {analysisResult.wordFrequencies.map((item, index) => (
-                           <li key={item.word} className="flex items-center justify-between p-2 rounded-md hover:bg-muted transition-colors">
-                            <div className="flex items-center gap-4">
-                              <span className="text-sm font-semibold text-muted-foreground w-4 text-right">{index + 1}.</span>
-                              <span className="text-base font-medium capitalize">{item.word}</span>
-                            </div>
-                            <span className="text-base font-bold text-primary">{item.count}</span>
-                          </li>
-                        ))}
-                      </ol>
+                      <Carousel opts={{ align: 'start', slidesToScroll: 3 }} className="w-full">
+                        <CarouselContent>
+                          {analysisResult.wordFrequencies.map((item, index) => (
+                            <CarouselItem key={item.word} className="basis-1/3">
+                               <div className="p-1">
+                                <Card>
+                                  <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
+                                    <span className="text-3xl font-bold capitalize">{item.word}</span>
+                                    <span className="text-sm text-muted-foreground">{item.count} times</span>
+                                  </CardContent>
+                                </Card>
+                              </div>
+                            </CarouselItem>
+                          ))}
+                        </CarouselContent>
+                        <CarouselPrevious />
+                        <CarouselNext />
+                      </Carousel>
                     </CardContent>
                   </Card>
                 </motion.div>
