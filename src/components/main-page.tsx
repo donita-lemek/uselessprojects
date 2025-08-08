@@ -197,19 +197,77 @@ export function MainPage() {
       <main className="flex-1 p-4 md:p-8">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            <Card className="overflow-hidden shadow-2xl shadow-primary/10">
-              <div className="aspect-video bg-black flex items-center justify-center">
-                {isAnalyzing && !analysisResult ? (
-                  <div className="text-center text-background">
-                    <LoaderCircle className="mx-auto h-12 w-12 animate-spin text-primary" />
-                    <p className="mt-4 text-lg font-medium">Analyzing your video...</p>
-                    <p className="text-muted-foreground">This may take a moment.</p>
-                  </div>
-                ) : (
-                  <video ref={videoRef} src={videoUrl} controls className="w-full h-full" />
-                )}
-              </div>
-            </Card>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+                <div className="md:col-span-3">
+                  <Card className="overflow-hidden shadow-2xl shadow-primary/10">
+                    <div className="aspect-video bg-black flex items-center justify-center">
+                      {isAnalyzing && !analysisResult ? (
+                        <div className="text-center text-background">
+                          <LoaderCircle className="mx-auto h-12 w-12 animate-spin text-primary" />
+                          <p className="mt-4 text-lg font-medium">Analyzing your video...</p>
+                          <p className="text-muted-foreground">This may take a moment.</p>
+                        </div>
+                      ) : (
+                        <video ref={videoRef} src={videoUrl} controls className="w-full h-full" />
+                      )}
+                    </div>
+                  </Card>
+                </div>
+                <div className="md:col-span-2">
+                   <AnimatePresence>
+                    {analysisResult && wordClips.length > 0 && selectedWord ? (
+                      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <MessageSquareQuote className="text-primary"/> Word Clips
+                            </CardTitle>
+                            <CardDescription>
+                              Click to play clips where <span className="font-bold text-primary">{`"${selectedWord?.word}"`}</span> was mentioned.
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <ScrollArea className="h-48">
+                              <div className="space-y-2 pr-4">
+                                {wordClips.map((clip, index) => (
+                                  <button
+                                      key={index}
+                                      onClick={() => handleClipPlay(clip.startTime)}
+                                      className="w-full flex items-center justify-between p-2 rounded-lg transition-colors text-left hover:bg-muted/50"
+                                    >
+                                      <div className='flex items-center gap-2'>
+                                        <PlayCircle className="text-primary w-5 h-5"/>
+                                        <span className="text-sm">
+                                          Mention at <span className="font-mono text-primary">{clip.startTime.toFixed(1)}s</span>
+                                        </span>
+                                      </div>
+                                  </button>
+                                ))}
+                              </div>
+                            </ScrollArea>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ) : (isAnalyzing && (
+                      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <MessageSquareQuote className="text-primary"/> Word Clips
+                            </CardTitle>
+                             <CardDescription>
+                              Finding clips...
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-2 h-48">
+                             {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+            </div>
 
             <AnimatePresence>
                 {(isRoasting || roast) && (
@@ -266,8 +324,8 @@ export function MainPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <ScrollArea className="h-60 pr-4">
-                        <div className="space-y-2">
+                      <ScrollArea className="h-[calc(100vh-24rem)]">
+                        <div className="space-y-2 pr-4">
                           {analysisResult.wordFrequencies.map((item, index) => (
                             <button key={item.word}  onClick={() => setSelectedWord(item)} disabled={isRoasting}
                             className={cn("w-full flex items-center justify-between p-3 rounded-lg transition-colors", 
@@ -293,51 +351,13 @@ export function MainPage() {
                           Analyzing the video for top words...
                         </CardDescription>
                       </CardHeader>
-                      <CardContent className="space-y-2">
-                        {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+                      <CardContent className="space-y-2 h-[calc(100vh-24rem)]">
+                        {[...Array(10)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
                       </CardContent>
                     </Card>
                  </motion.div>
               ))}
             </AnimatePresence>
-            
-            <AnimatePresence>
-              {analysisResult && wordClips.length > 0 && selectedWord && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <MessageSquareQuote className="text-primary"/> Word Clips
-                      </CardTitle>
-                      <CardDescription>
-                        Click to play video clips where <span className="font-bold text-primary">{`"${selectedWord?.word}"`}</span> was mentioned.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <ScrollArea className="h-60">
-                        <div className="space-y-2 pr-4">
-                          {wordClips.map((clip, index) => (
-                            <button
-                                key={index}
-                                onClick={() => handleClipPlay(clip.startTime)}
-                                className="w-full flex items-center justify-between p-2 rounded-lg transition-colors text-left hover:bg-muted/50"
-                              >
-                                <div className='flex items-center gap-2'>
-                                  <PlayCircle className="text-primary w-5 h-5"/>
-                                  <span className="text-sm">
-                                    Mention at <span className="font-mono text-primary">{clip.startTime.toFixed(1)}s</span>
-                                  </span>
-                                </div>
-                            </button>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
           </div>
         </div>
       </main>
