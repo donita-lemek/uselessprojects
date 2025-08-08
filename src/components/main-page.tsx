@@ -3,31 +3,15 @@
 import { useState, useRef } from 'react';
 import type { ChangeEvent } from 'react';
 import { generateRoast } from '@/ai/flows/generate-roast';
+import { analyzeVideo, type WordFrequency } from '@/ai/flows/analyze-video';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/icons';
-import { Flame, Share2, Clipboard, LoaderCircle, Play, Video, Upload } from 'lucide-react';
+import { Flame, Share2, Clipboard, LoaderCircle, Play, Upload } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-
-interface WordFrequency {
-  word: string;
-  count: number;
-  timestamps: number[];
-}
-
-const MOCK_TRANSCRIPT = "Big Buck Bunny, Big Buck Bunny, oh Big Buck Bunny. The bunny was very big. A big, big, bunny. He was a bunny of unusual size. I like the big bunny. This bunny, this big bunny, is a hero. What a bunny. A truly big bunny.";
-const MOCK_WORD_FREQUENCIES: WordFrequency[] = [
-  { word: 'bunny', count: 8, timestamps: [1, 3, 5.5, 9.5, 12, 16.5, 18, 20.5, 23] },
-  { word: 'big', count: 6, timestamps: [0.5, 2.5, 8.5, 11, 17, 22] },
-  { word: 'buck', count: 3, timestamps: [1.5, 3.5, 6] },
-  { word: 'a', count: 3, timestamps: [10, 19, 21] },
-  { word: 'was', count: 2, timestamps: [7.5, 13] },
-  { word: 'the', count: 2, timestamps: [7, 15] },
-];
-
 
 export function MainPage() {
   const [isAnalyzed, setIsAnalyzed] = useState(false);
@@ -43,21 +27,50 @@ export function MainPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setIsAnalyzing(true);
-      const videoObjectUrl = URL.createObjectURL(file);
-      
-      // Simulate analysis delay
-      setTimeout(() => {
-        setVideoUrl(videoObjectUrl);
-        setWordFrequencies(MOCK_WORD_FREQUENCIES);
-        setTranscript(MOCK_TRANSCRIPT);
-        setSelectedWord(MOCK_WORD_FREQUENCIES[0]);
-        setIsAnalyzed(true);
+      setVideoUrl(URL.createObjectURL(file));
+
+      try {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = async () => {
+          const videoDataUri = reader.result as string;
+          try {
+            const result = await analyzeVideo({ videoDataUri });
+            setWordFrequencies(result.wordFrequencies);
+            setTranscript(result.transcript);
+            if (result.wordFrequencies.length > 0) {
+              setSelectedWord(result.wordFrequencies[0]);
+            }
+            setIsAnalyzed(true);
+          } catch (error) {
+            console.error(error);
+            toast({
+              variant: 'destructive',
+              title: 'Analysis Failed',
+              description: 'Could not analyze the video. Please try again with a different video.',
+            });
+            // Reset state if analysis fails
+            setVideoUrl('');
+            if (fileInputRef.current) {
+              fileInputRef.current.value = '';
+            }
+          } finally {
+            setIsAnalyzing(false);
+          }
+        };
+      } catch (e) {
+        console.error(e);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'There was an error reading the file.',
+        });
         setIsAnalyzing(false);
-      }, 1500);
+      }
     }
   };
 
@@ -282,5 +295,3 @@ export function MainPage() {
     </div>
   );
 }
-
-    

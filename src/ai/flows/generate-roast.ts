@@ -1,4 +1,3 @@
-// This is a server action.
 'use server';
 
 /**
