@@ -135,16 +135,17 @@ export function MainPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                        {analysisResult.wordFrequencies.map((item) => (
-                          <Card key={item.word} className="text-center hover:bg-muted transition-colors">
-                            <CardContent className="p-4 flex flex-col items-center justify-center gap-2">
-                              <p className="text-2xl font-bold text-primary">{item.count}</p>
-                              <p className="text-sm font-medium text-muted-foreground capitalize">{item.word}</p>
-                            </CardContent>
-                          </Card>
+                      <ol className="space-y-1">
+                        {analysisResult.wordFrequencies.map((item, index) => (
+                           <li key={item.word} className="flex items-center justify-between p-2 rounded-md hover:bg-muted transition-colors">
+                            <div className="flex items-center gap-4">
+                              <span className="text-sm font-semibold text-muted-foreground w-4 text-right">{index + 1}.</span>
+                              <span className="text-base font-medium capitalize">{item.word}</span>
+                            </div>
+                            <span className="text-base font-bold text-primary">{item.count}</span>
+                          </li>
                         ))}
-                      </div>
+                      </ol>
                     </CardContent>
                   </Card>
                 </motion.div>
