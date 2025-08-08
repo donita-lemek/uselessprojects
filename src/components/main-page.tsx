@@ -10,7 +10,7 @@ import { Logo } from '@/components/icons';
 import { LoaderCircle, Upload } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export function MainPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -136,24 +136,19 @@ export function MainPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <Carousel opts={{ align: 'start', slidesToScroll: 3 }} className="w-full">
-                        <CarouselContent>
+                      <ScrollArea className="h-48">
+                        <div className="space-y-2 pr-4">
                           {analysisResult.wordFrequencies.map((item, index) => (
-                            <CarouselItem key={item.word} className="basis-1/3">
-                               <div className="p-1">
-                                <Card>
-                                  <CardContent className="flex flex-col items-center justify-center p-4 gap-2">
-                                    <span className="text-3xl font-bold capitalize">{item.word}</span>
-                                    <span className="text-sm text-muted-foreground">{item.count} times</span>
-                                  </CardContent>
-                                </Card>
+                            <div key={item.word} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                               <div className="flex items-center gap-4">
+                                <span className="text-sm font-bold w-6 text-center text-primary">{index + 1}.</span>
+                                <span className="text-lg font-medium capitalize">{item.word}</span>
                               </div>
-                            </CarouselItem>
+                              <span className="text-sm text-muted-foreground font-mono px-2 py-1 rounded-md bg-background">{item.count} times</span>
+                            </div>
                           ))}
-                        </CarouselContent>
-                        <CarouselPrevious />
-                        <CarouselNext />
-                      </Carousel>
+                        </div>
+                      </ScrollArea>
                     </CardContent>
                   </Card>
                 </motion.div>
