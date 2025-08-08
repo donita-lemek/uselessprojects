@@ -12,9 +12,15 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import type { TimedWord } from './analyze-video';
 
+const TimedWordSchema = z.object({
+    word: z.string(),
+    startTime: z.number(),
+    endTime: z.number(),
+});
+
 const GenerateRoastInputSchema = z.object({
   word: z.string().describe('The word to base the roast on.'),
-  timedTranscript: z.custom<TimedWord[]>().describe('The full transcript of the video for context.'),
+  timedTranscript: z.array(TimedWordSchema).describe('The full transcript of the video for context.'),
 });
 export type GenerateRoastInput = z.infer<typeof GenerateRoastInputSchema>;
 
