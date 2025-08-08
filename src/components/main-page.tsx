@@ -35,7 +35,7 @@ export function MainPage() {
     const { word } = selectedWord;
     
     return timedTranscript.filter(
-      (timedWord) => timedWord.word.toLowerCase() === word.toLowerCase()
+      (timedWord) => timedWord.word.toLowerCase().replace(/[^a-z]/g, '') === word.toLowerCase()
     );
   }, [analysisResult, selectedWord]);
 
@@ -301,7 +301,7 @@ export function MainPage() {
             </AnimatePresence>
             
             <AnimatePresence>
-              {analysisResult && wordClips.length > 0 && (
+              {analysisResult && wordClips.length > 0 && selectedWord && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                   <Card>
                     <CardHeader>
@@ -309,7 +309,7 @@ export function MainPage() {
                         <MessageSquareQuote className="text-primary"/> Word Clips
                       </CardTitle>
                       <CardDescription>
-                        Click a timestamp to play the clip where <span className="font-bold text-primary">{`"${selectedWord?.word}"`}</span> was mentioned.
+                        Click to play video clips where <span className="font-bold text-primary">{`"${selectedWord?.word}"`}</span> was mentioned.
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
