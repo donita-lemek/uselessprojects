@@ -49,6 +49,7 @@ const STOP_WORDS = new Set([
 const transcriptionPrompt = ai.definePrompt({
     name: 'transcriptionPrompt',
     input: { schema: AnalyzeVideoInputSchema },
+    output: { schema: z.object({ transcript: z.string() }) },
     prompt: `Provide a detailed transcript for the following video.
 
 Video: {{media url=videoDataUri}}`
@@ -62,12 +63,13 @@ const analyzeVideoFlow = ai.defineFlow(
     outputSchema: AnalyzeVideoOutputSchema,
   },
   async (input) => {
-    const { output: transcript } = await transcriptionPrompt(input);
+    const { output } = await transcriptionPrompt(input);
 
-    if (!transcript) {
+    if (!output || !output.transcript) {
         throw new Error('Failed to generate transcript.');
     }
-
+    
+    const transcript = output.transcript;
     const words = transcript.toLowerCase().match(/\b\w+\b/g) || [];
     const frequencies = new Map<string, number>();
 
