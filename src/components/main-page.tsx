@@ -55,7 +55,8 @@ export function MainPage() {
     if (selectedWord && analysisResult) {
       handleRoastGeneration(selectedWord.word, analysisResult.timedTranscript);
     }
-  }, [selectedWord, analysisResult]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedWord]);
 
   const handleRoastGeneration = async (word: string, timedTranscript: TimedWord[]) => {
     setIsRoasting(true);
