@@ -9,7 +9,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/icons';
-import { Flame, Share2, Clipboard, LoaderCircle, Play, Video } from 'lucide-react';
+import { Flame, Share2, Clipboard, LoaderCircle, Play, Video, Upload } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 interface WordFrequency {
   word: string;
@@ -26,7 +27,6 @@ const MOCK_WORD_FREQUENCIES: WordFrequency[] = [
   { word: 'was', count: 2, timestamps: [7.5, 13] },
   { word: 'the', count: 2, timestamps: [7, 15] },
 ];
-const MOCK_VIDEO_URL = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
 
 
 export function MainPage() {
@@ -40,18 +40,25 @@ export function MainPage() {
   const [selectedWord, setSelectedWord] = useState<WordFrequency | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleAnalyze = () => {
-    setIsAnalyzing(true);
-    setTimeout(() => {
-      setWordFrequencies(MOCK_WORD_FREQUENCIES);
-      setTranscript(MOCK_TRANSCRIPT);
-      setVideoUrl(MOCK_VIDEO_URL);
-      setSelectedWord(MOCK_WORD_FREQUENCIES[0]);
-      setIsAnalyzed(true);
-      setIsAnalyzing(false);
-    }, 1500);
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setIsAnalyzing(true);
+      const videoObjectUrl = URL.createObjectURL(file);
+      
+      // Simulate analysis delay
+      setTimeout(() => {
+        setVideoUrl(videoObjectUrl);
+        setWordFrequencies(MOCK_WORD_FREQUENCIES);
+        setTranscript(MOCK_TRANSCRIPT);
+        setSelectedWord(MOCK_WORD_FREQUENCIES[0]);
+        setIsAnalyzed(true);
+        setIsAnalyzing(false);
+      }, 1500);
+    }
   };
 
   const handleGenerateRoast = async () => {
@@ -116,7 +123,15 @@ export function MainPage() {
             Upload a video, and our AI will find the most used words and cook up a custom roast for you. Ready to feel the burn?
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-6">
-            <Button size="lg" onClick={handleAnalyze} disabled={isAnalyzing}>
+            <Input
+              type="file"
+              accept="video/*"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              disabled={isAnalyzing}
+            />
+            <Button size="lg" onClick={() => fileInputRef.current?.click()} disabled={isAnalyzing}>
               {isAnalyzing ? (
                 <>
                   <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
@@ -124,8 +139,8 @@ export function MainPage() {
                 </>
               ) : (
                 <>
-                  <Video className="mr-2 h-4 w-4" />
-                  Analyze Demo Video
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Video
                 </>
               )}
             </Button>
@@ -267,3 +282,5 @@ export function MainPage() {
     </div>
   );
 }
+
+    
