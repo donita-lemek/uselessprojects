@@ -175,7 +175,7 @@ export function MainPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-muted/20">
+    <div className="min-h-screen flex flex-col bg-muted/20 font-body">
       <header className="p-4 border-b sticky top-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-between">
         <div className="max-w-7xl mx-auto flex items-center gap-4 flex-1">
           <Logo className="w-8 h-8 text-primary" />
@@ -365,3 +365,5 @@ export function MainPage() {
     </div>
   );
 }
+
+    
