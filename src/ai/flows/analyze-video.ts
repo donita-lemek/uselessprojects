@@ -65,7 +65,6 @@ Video: {{media url=videoDataUri}}`;
     const { transcript } = transcriptOutput;
 
     // Step 2: Process the transcript in code for accuracy.
-    const stopWords = new Set(['the', 'a', 'is', 'in', 'it', 'and', 'of', 'to', 'for', 'i', 'you', 'he', 'she', 'they', 'we', 'was', 'are', 'at', 'be', 'but', 'by', 'on', 'with', 'that', 'this', 'from', 'or', 'as', 'an', 'my', 'so', 'if', 'me', 'not', 'your', 'just', 'do']);
     const wordCounts: Record<string, { count: number, timestamps: number[] }> = {};
 
     const lines = transcript.split('\n').filter(line => line.trim() !== '');
@@ -79,7 +78,7 @@ Video: {{media url=videoDataUri}}`;
             const words = text.toLowerCase().match(/\b\w+'?\w*\b/g) || [];
 
             for (const word of words) {
-                if (!stopWords.has(word) && isNaN(Number(word))) { // filter out stopwords and plain numbers
+                if (isNaN(Number(word))) { // filter out plain numbers
                     if (!wordCounts[word]) {
                         wordCounts[word] = { count: 0, timestamps: [] };
                     }
