@@ -10,7 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/icons';
-import { Flame, Share2, Clipboard, LoaderCircle, Play, Upload } from 'lucide-react';
+import { Flame, Share2, Clipboard, LoaderCircle, Upload } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 export function MainPage() {
@@ -21,9 +21,7 @@ export function MainPage() {
   const [videoUrl, setVideoUrl] = useState('');
   const [roast, setRoast] = useState('');
   const [isRoasting, setIsRoasting] = useState(false);
-  const [selectedWord, setSelectedWord] = useState<WordFrequency | null>(null);
 
-  const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -42,9 +40,6 @@ export function MainPage() {
             const result = await analyzeVideo({ videoDataUri });
             setWordFrequencies(result.wordFrequencies);
             setTranscript(result.transcript);
-            if (result.wordFrequencies.length > 0) {
-              setSelectedWord(result.wordFrequencies[0]);
-            }
             setIsAnalyzed(true);
           } catch (error) {
             console.error(error);
@@ -102,16 +97,6 @@ export function MainPage() {
       });
     } finally {
       setIsRoasting(false);
-    }
-  };
-
-  const playClip = (startTime: number) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = startTime;
-      videoRef.current.play();
-      setTimeout(() => {
-        videoRef.current?.pause();
-      }, 4000); // Play for 4 seconds
     }
   };
 
@@ -179,7 +164,7 @@ export function MainPage() {
           <div className="lg:col-span-2 space-y-8">
             <Card className="overflow-hidden shadow-2xl shadow-primary/10">
               <div className="aspect-video bg-black">
-                <video ref={videoRef} src={videoUrl} controls className="w-full h-full" />
+                <video src={videoUrl} controls className="w-full h-full" />
               </div>
             </Card>
 
@@ -222,22 +207,6 @@ export function MainPage() {
               </Card>
             ) : null}
 
-            {selectedWord && (
-               <Card>
-                <CardHeader>
-                  <CardTitle>Word Clips: <span className="font-bold text-primary">&ldquo;{selectedWord.word}&rdquo;</span></CardTitle>
-                  <CardDescription>Click to play moments where the word was spoken.</CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-2">
-                  {selectedWord.timestamps.map((time, i) => (
-                    <Button key={i} variant="outline" size="sm" onClick={() => playClip(time)}>
-                      <Play className="mr-2 h-4 w-4" />
-                      Instance #{i + 1}
-                    </Button>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
           </div>
 
           <div className="space-y-8">
@@ -251,12 +220,10 @@ export function MainPage() {
                   <div className="space-y-0">
                     {wordFrequencies.map((item, index) => (
                       <div key={item.word} data-word={item.word} className="group">
-                        <Button
-                          variant={selectedWord?.word === item.word ? "secondary" : "ghost"}
-                          className="w-full justify-between p-4 h-auto rounded-none border-b"
-                          onClick={() => setSelectedWord(item)}
+                        <div
+                          className="w-full justify-between p-4 h-auto rounded-none border-b flex items-center"
                         >
-                          <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-4 flex-1">
                             <span className="text-lg font-bold text-primary w-6 text-center">{index + 1}</span>
                             <span className="text-lg font-medium capitalize">{item.word}</span>
                           </div>
@@ -265,7 +232,7 @@ export function MainPage() {
                             <br/>
                             <span className="text-xs">times</span>
                           </div>
-                        </Button>
+                        </div>
                         {index === 0 && (
                           <div className="px-4 pb-4 pt-3">
                             <Button className="w-full" onClick={handleGenerateRoast} disabled={isRoasting || !!roast}>

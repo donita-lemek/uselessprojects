@@ -14,7 +14,6 @@ import {z} from 'genkit';
 const WordFrequencySchema = z.object({
   word: z.string().describe('A word from the transcript.'),
   count: z.number().describe('The number of times the word appears in the transcript.'),
-  timestamps: z.array(z.number()).describe('An array of timestamps (in seconds) where the word appears in the video.'),
 });
 
 const AnalyzeVideoInputSchema = z.object({
@@ -27,7 +26,7 @@ const AnalyzeVideoInputSchema = z.object({
 export type AnalyzeVideoInput = z.infer<typeof AnalyzeVideoInputSchema>;
 
 const AnalyzeVideoOutputSchema = z.object({
-  transcript: z.string().describe('The full transcript of the video, with timestamps for each utterance.'),
+  transcript: z.string().describe('The full transcript of the video.'),
   wordFrequencies: z.array(WordFrequencySchema).describe('An array of the 10 most frequent words and their timestamps.'),
 });
 export type AnalyzeVideoOutput = z.infer<typeof AnalyzeVideoOutputSchema>;
@@ -35,7 +34,7 @@ export type WordFrequency = z.infer<typeof WordFrequencySchema>;
 
 // Simple schema for just getting the transcript
 const TranscriptOutputSchema = z.object({
-    transcript: z.string().describe('The full transcript of the video, with timestamps for each utterance in the format [HH:MM:SS].'),
+    transcript: z.string().describe('The full transcript of the video.'),
 });
 
 const analyzeVideoFlow = ai.defineFlow(
@@ -46,11 +45,12 @@ const analyzeVideoFlow = ai.defineFlow(
   },
   async (input) => {
     // Step 1: Get the transcript from the AI.
-    const transcriptPrompt = `You are a video analysis expert. Your task is to generate a full transcript of all spoken content from the provided video. The transcript should include timestamps for each utterance in the format [HH:MM:SS].
+    const transcriptPrompt = `You are a video analysis expert. Your task is to generate a full, raw transcript of all spoken content from the provided video. Do not add any formatting, timestamps, or headers.
 
 Video: {{media url=videoDataUri}}`;
 
     const { output: transcriptOutput } = await ai.generate({
+        model: 'googleai/gemini-2.0-flash',
         prompt: transcriptPrompt,
         input: input,
         output: {
@@ -63,43 +63,25 @@ Video: {{media url=videoDataUri}}`;
     }
 
     const { transcript } = transcriptOutput;
-
-    // Step 2: Process the transcript in code for accuracy.
-    const wordCounts: Record<string, { count: number, timestamps: number[] }> = {};
-
-    const lines = transcript.split('\n').filter(line => line.trim() !== '');
     
-    for (const line of lines) {
-        const match = line.match(/\[(\d{2}):(\d{2}):(\d{2})\]\s*(.*)/);
-        if (match) {
-            const [, hours, minutes, seconds, text] = match;
-            const timestamp = parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
-            
-            const words = text.toLowerCase().match(/\b\w+'?\w*\b/g) || [];
+    // Step 2: Process the transcript in code for accuracy.
+    const wordCounts: Record<string, number> = {};
 
-            for (const word of words) {
-                if (isNaN(Number(word))) { // filter out plain numbers
-                    if (!wordCounts[word]) {
-                        wordCounts[word] = { count: 0, timestamps: [] };
-                    }
-                    wordCounts[word].count++;
-                    if (!wordCounts[word].timestamps.includes(timestamp)) {
-                       wordCounts[word].timestamps.push(timestamp);
-                    }
-                }
-            }
+    const words = transcript.toLowerCase().match(/\b\w+'?\w*\b/g) || [];
+
+    for (const word of words) {
+        if (isNaN(Number(word))) { // filter out plain numbers
+            wordCounts[word] = (wordCounts[word] || 0) + 1;
         }
     }
 
-
     const sortedWords = Object.entries(wordCounts)
-        .sort(([, a], [, b]) => b.count - a.count)
+        .sort(([, a], [, b]) => b - a)
         .slice(0, 10);
 
-    const wordFrequencies: WordFrequency[] = sortedWords.map(([word, data]) => ({
+    const wordFrequencies: WordFrequency[] = sortedWords.map(([word, count]) => ({
         word,
-        count: data.count,
-        timestamps: data.timestamps.sort((a,b) => a - b),
+        count,
     }));
 
     return {
