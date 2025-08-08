@@ -26,7 +26,10 @@ export type GenerateRoastOutput = z.infer<typeof GenerateRoastOutputSchema>;
 
 const roastPrompt = ai.definePrompt({
     name: 'roastPrompt',
-    input: { schema: GenerateRoastInputSchema },
+    input: { schema: z.object({
+        word: z.string(),
+        transcriptJson: z.string(),
+    }) },
     output: { schema: GenerateRoastOutputSchema },
     prompt: `You are a professional comedian known for your sharp, witty roasts.
 You will be given a word and the full transcript of a video where that word was spoken.
@@ -36,7 +39,7 @@ Make it burn!
 
 Word: {{{word}}}
 Transcript:
-{{{jsonStringify timedTranscript}}}
+{{{transcriptJson}}}
 `,
     config: {
         model: 'googleai/gemini-2.0-flash',
@@ -69,7 +72,10 @@ const generateRoastFlow = ai.defineFlow(
     outputSchema: GenerateRoastOutputSchema,
   },
   async (input) => {
-    const { output } = await roastPrompt(input);
+    const { output } = await roastPrompt({
+        word: input.word,
+        transcriptJson: JSON.stringify(input.timedTranscript),
+    });
     if (!output) {
       throw new Error('Failed to generate roast.');
     }
