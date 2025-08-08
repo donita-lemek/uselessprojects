@@ -33,6 +33,11 @@ const AnalyzeVideoOutputSchema = z.object({
 export type AnalyzeVideoOutput = z.infer<typeof AnalyzeVideoOutputSchema>;
 export type WordFrequency = z.infer<typeof WordFrequencySchema>;
 
+// Simple schema for just getting the transcript
+const TranscriptOutputSchema = z.object({
+    transcript: z.string().describe('The full transcript of the video, with timestamps for each utterance in the format [HH:MM:SS].'),
+});
+
 const analyzeVideoFlow = ai.defineFlow(
   {
     name: 'analyzeVideoFlow',
@@ -40,21 +45,65 @@ const analyzeVideoFlow = ai.defineFlow(
     outputSchema: AnalyzeVideoOutputSchema,
   },
   async (input) => {
-    const prompt = `You are a video analysis expert. Your task is to analyze the video provided.
-First, generate a full transcript of all spoken content with timestamps.
-Second, from the transcript, identify the 10 most frequent words (excluding common stop words like 'the', 'a', 'is'). For each of these 10 words, provide its total count and a list of timestamps (in seconds) for every time it appears in the video.
+    // Step 1: Get the transcript from the AI.
+    const transcriptPrompt = `You are a video analysis expert. Your task is to generate a full transcript of all spoken content from the provided video. The transcript should include timestamps for each utterance in the format [HH:MM:SS].
 
 Video: {{media url=videoDataUri}}`;
 
-    const {output} = await ai.generate({
-        prompt: prompt,
+    const { output: transcriptOutput } = await ai.generate({
+        prompt: transcriptPrompt,
         input: input,
         output: {
-            schema: AnalyzeVideoOutputSchema,
+            schema: TranscriptOutputSchema,
         },
     });
 
-    return output!;
+    if (!transcriptOutput) {
+      throw new Error("Failed to generate transcript.");
+    }
+
+    const { transcript } = transcriptOutput;
+
+    // Step 2: Process the transcript in code for accuracy.
+    const stopWords = new Set(['the', 'a', 'is', 'in', 'it', 'and', 'of', 'to', 'for', 'i', 'you', 'he', 'she', 'they', 'we', 'was', 'are', 'at', 'be', 'but', 'by', 'on', 'with', 'that', 'this', 'from', 'or', 'as']);
+    const wordCounts: Record<string, { count: number, timestamps: number[] }> = {};
+
+    const lineRegex = /\[(\d{2}):(\d{2}):(\d{2})\]\s*(.*)/g;
+    let match;
+
+    while ((match = lineRegex.exec(transcript)) !== null) {
+        const [, hours, minutes, seconds, text] = match;
+        const timestamp = parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
+        
+        const words = text.toLowerCase().match(/\b\w+\b/g) || [];
+
+        for (const word of words) {
+            if (!stopWords.has(word)) {
+                if (!wordCounts[word]) {
+                    wordCounts[word] = { count: 0, timestamps: [] };
+                }
+                wordCounts[word].count++;
+                if (!wordCounts[word].timestamps.includes(timestamp)) {
+                   wordCounts[word].timestamps.push(timestamp);
+                }
+            }
+        }
+    }
+
+    const sortedWords = Object.entries(wordCounts)
+        .sort(([, a], [, b]) => b.count - a.count)
+        .slice(0, 10);
+
+    const wordFrequencies: WordFrequency[] = sortedWords.map(([word, data]) => ({
+        word,
+        count: data.count,
+        timestamps: data.timestamps.sort((a,b) => a - b),
+    }));
+
+    return {
+        transcript,
+        wordFrequencies,
+    };
   }
 );
 
