@@ -28,13 +28,11 @@ export type AnalyzeVideoInput = z.infer<typeof AnalyzeVideoInputSchema>;
 
 const AnalyzeVideoOutputSchema = z.object({
   transcript: z.string().describe('The full transcript of the video, with timestamps for each utterance.'),
-  wordFrequencies: z.array(WordFrequencySchema).describe('An array of the most frequent words and their timestamps.'),
+  wordFrequencies: z.array(WordFrequencySchema).describe('An array of the 10 most frequent words and their timestamps.'),
 });
 export type AnalyzeVideoOutput = z.infer<typeof AnalyzeVideoOutputSchema>;
 export type WordFrequency = z.infer<typeof WordFrequencySchema>;
 
-// This flow was too complex and was failing.
-// We are replacing it with two simpler flows and an orchestrator function.
 const analyzeVideoFlow = ai.defineFlow(
   {
     name: 'analyzeVideoFlow',
@@ -42,9 +40,9 @@ const analyzeVideoFlow = ai.defineFlow(
     outputSchema: AnalyzeVideoOutputSchema,
   },
   async (input) => {
-    const prompt = `You are an expert video analyst. Analyze the provided video to perform two tasks:
-1.  Generate a complete and accurate transcript of all spoken words, including timestamps for each utterance.
-2.  Analyze the full transcript to identify the 10 most frequently used words. For each of these words, provide a count of its occurrences and an array of the precise timestamps (in seconds) where it is spoken in the video.
+    const prompt = `You are a video analysis expert. Your task is to analyze the video provided.
+First, generate a full transcript of all spoken content with timestamps.
+Second, from the transcript, identify the 10 most frequent words (excluding common stop words like 'the', 'a', 'is'). For each of these 10 words, provide its total count and a list of timestamps (in seconds) for every time it appears in the video.
 
 Video: {{media url=videoDataUri}}`;
 
@@ -61,7 +59,6 @@ Video: {{media url=videoDataUri}}`;
 );
 
 
-// Main function that orchestrates the two new flows
 export async function analyzeVideo(input: AnalyzeVideoInput): Promise<AnalyzeVideoOutput> {
     return analyzeVideoFlow(input);
 }

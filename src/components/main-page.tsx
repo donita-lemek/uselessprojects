@@ -246,26 +246,28 @@ export function MainPage() {
                 <CardTitle>Frequent Words</CardTitle>
                 <CardDescription>The words that just couldn&apos;t stay quiet.</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 <ScrollArea className="h-96">
-                  <div className="space-y-2 pr-4">
+                  <div className="space-y-0">
                     {wordFrequencies.map((item, index) => (
                       <div key={item.word} data-word={item.word} className="group">
                         <Button
                           variant={selectedWord?.word === item.word ? "secondary" : "ghost"}
-                          className="w-full justify-between p-4 h-auto"
+                          className="w-full justify-between p-4 h-auto rounded-none border-b"
                           onClick={() => setSelectedWord(item)}
                         >
                           <div className="flex items-center gap-4">
                             <span className="text-lg font-bold text-primary w-6 text-center">{index + 1}</span>
-                            <span className="text-lg font-medium">{item.word}</span>
+                            <span className="text-lg font-medium capitalize">{item.word}</span>
                           </div>
-                          <div className="text-muted-foreground">
-                            <span className="font-bold text-lg text-foreground">{item.count}</span> times
+                          <div className="text-muted-foreground text-right">
+                            <span className="font-bold text-lg text-foreground">{item.count}</span>
+                            <br/>
+                            <span className="text-xs">times</span>
                           </div>
                         </Button>
                         {index === 0 && (
-                          <div className="px-4 pb-2 pt-1">
+                          <div className="px-4 pb-4 pt-3">
                             <Button className="w-full" onClick={handleGenerateRoast} disabled={isRoasting || !!roast}>
                               {isRoasting ? (
                                 <>
