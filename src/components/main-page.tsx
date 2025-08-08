@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import type { ChangeEvent } from 'react';
 import { analyzeVideo, type WordFrequency } from '@/ai/flows/analyze-video';
 import { generateRoast } from '@/ai/flows/generate-roast';
@@ -8,12 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/icons';
-import { LoaderCircle, Upload, Wand2, Copy, Share2 } from 'lucide-react';
+import { LoaderCircle, Upload, Wand2, Copy, Share2, MessageSquareQuote } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
 
 export function MainPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -25,10 +26,29 @@ export function MainPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  
+  const wordClips = useMemo(() => {
+    if (!analysisResult || !selectedWord) return [];
+    
+    const { transcript } = analysisResult;
+    const { word } = selectedWord;
+    
+    // Improved sentence splitting regex
+    const sentences = transcript.match(/[^.!?]+[.!?]+/g) || [];
+    
+    const clips = sentences
+      .filter(sentence => new RegExp(`\\b${word}\\b`, 'i').test(sentence))
+      .map(sentence => sentence.trim());
+      
+    return clips;
+  }, [analysisResult, selectedWord]);
+
 
   useEffect(() => {
     if (analysisResult && analysisResult.wordFrequencies.length > 0) {
-      setSelectedWord(analysisResult.wordFrequencies[0]);
+      if (!selectedWord || !analysisResult.wordFrequencies.find(f => f.word === selectedWord.word)) {
+        setSelectedWord(analysisResult.wordFrequencies[0]);
+      }
     } else {
       setSelectedWord(null);
     }
@@ -154,14 +174,20 @@ export function MainPage() {
             Roast <span className="text-primary">Radar</span>
           </h1>
         </div>
-         <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isAnalyzing}>
+         <Button variant="outline" size="sm" onClick={() => {
+            setVideoUrl('');
+            setAnalysisResult(null);
+            setSelectedWord(null);
+            setRoast(null);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+          }} disabled={isAnalyzing}>
               <Upload className="mr-2 h-4 w-4" />
-              Upload New Video
+              New Video
           </Button>
       </header>
 
       <main className="flex-1 p-4 md:p-8">
-        <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             <Card className="overflow-hidden shadow-2xl shadow-primary/10">
               <div className="aspect-video bg-black flex items-center justify-center">
@@ -222,7 +248,7 @@ export function MainPage() {
           
           <div className="space-y-8">
              <AnimatePresence>
-              {analysisResult && (
+              {analysisResult ? (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                   <Card>
                     <CardHeader>
@@ -232,18 +258,62 @@ export function MainPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <ScrollArea className="h-96">
-                        <div className="space-y-2 pr-4">
-                          {analysisResult.wordFrequencies.map((item, index) => (
-                            <button key={item.word}  onClick={() => setSelectedWord(item)} disabled={isRoasting}
-                            className={cn("w-full flex items-center justify-between p-2 rounded-lg transition-colors", 
-                            selectedWord?.word === item.word ? 'bg-primary/20' : 'hover:bg-muted/50')}>
-                               <div className="flex items-center gap-4">
-                                <span className={cn("text-sm font-bold w-6 text-center", selectedWord?.word === item.word ? 'text-primary' : '')}>{index + 1}.</span>
-                                <span className="text-lg font-medium capitalize">{item.word}</span>
-                              </div>
-                              <span className="text-sm text-muted-foreground font-mono px-2 py-1 rounded-md bg-background">{item.count}</span>
-                            </button>
+                      <div className="space-y-2">
+                        {analysisResult.wordFrequencies.map((item, index) => (
+                          <button key={item.word}  onClick={() => setSelectedWord(item)} disabled={isRoasting}
+                          className={cn("w-full flex items-center justify-between p-3 rounded-lg transition-colors", 
+                          selectedWord?.word === item.word ? 'bg-primary/20' : 'hover:bg-muted/50')}>
+                             <div className="flex items-center gap-4">
+                              <span className={cn("text-sm font-bold w-6 text-center", selectedWord?.word === item.word ? 'text-primary' : 'text-muted-foreground')}>{index + 1}.</span>
+                              <span className="text-lg font-medium capitalize">{item.word}</span>
+                            </div>
+                            <span className="text-sm text-muted-foreground font-mono px-2 py-1 rounded-md bg-background/50">{item.count}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ) : (isAnalyzing && (
+                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Top Words</CardTitle>
+                        <CardDescription>
+                          Analyzing the video for top words...
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+                      </CardContent>
+                    </Card>
+                 </motion.div>
+              ))}
+            </AnimatePresence>
+            
+            <AnimatePresence>
+              {analysisResult && wordClips.length > 0 && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <MessageSquareQuote className="text-primary"/> Word Clips
+                      </CardTitle>
+                      <CardDescription>
+                        Snippets from the transcript where <span className="font-bold text-primary">{`"${selectedWord?.word}"`}</span> was mentioned.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ScrollArea className="h-60">
+                        <div className="space-y-4 pr-4">
+                          {wordClips.map((clip, index) => (
+                            <div key={index}>
+                              <blockquote 
+                                className="text-sm italic text-muted-foreground"
+                                dangerouslySetInnerHTML={{ __html: clip.replace(new RegExp(`\\b(${selectedWord?.word})\\b`, 'gi'), '<strong class="text-foreground">$1</strong>') }}
+                              />
+                               {index < wordClips.length - 1 && <Separator className="mt-4" />}
+                            </div>
                           ))}
                         </div>
                       </ScrollArea>
@@ -252,6 +322,7 @@ export function MainPage() {
                 </motion.div>
               )}
             </AnimatePresence>
+
           </div>
         </div>
       </main>
