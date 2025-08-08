@@ -14,7 +14,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
 
 export function MainPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -267,19 +266,21 @@ export function MainPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-2">
-                        {analysisResult.wordFrequencies.map((item, index) => (
-                          <button key={item.word}  onClick={() => setSelectedWord(item)} disabled={isRoasting}
-                          className={cn("w-full flex items-center justify-between p-3 rounded-lg transition-colors", 
-                          selectedWord?.word === item.word ? 'bg-primary/20' : 'hover:bg-muted/50')}>
-                             <div className="flex items-center gap-4">
-                              <span className={cn("text-sm font-bold w-6 text-center", selectedWord?.word === item.word ? 'text-primary' : 'text-muted-foreground')}>{index + 1}.</span>
-                              <span className="text-lg font-medium capitalize">{item.word}</span>
-                            </div>
-                            <span className="text-sm text-muted-foreground font-mono px-2 py-1 rounded-md bg-background/50">{item.count}</span>
-                          </button>
-                        ))}
-                      </div>
+                      <ScrollArea className="h-60 pr-4">
+                        <div className="space-y-2">
+                          {analysisResult.wordFrequencies.map((item, index) => (
+                            <button key={item.word}  onClick={() => setSelectedWord(item)} disabled={isRoasting}
+                            className={cn("w-full flex items-center justify-between p-3 rounded-lg transition-colors", 
+                            selectedWord?.word === item.word ? 'bg-primary/20' : 'hover:bg-muted/50')}>
+                              <div className="flex items-center gap-4">
+                                <span className={cn("text-sm font-bold w-6 text-center", selectedWord?.word === item.word ? 'text-primary' : 'text-muted-foreground')}>{index + 1}.</span>
+                                <span className="text-lg font-medium capitalize">{item.word}</span>
+                              </div>
+                              <span className="text-sm text-muted-foreground font-mono px-2 py-1 rounded-md bg-background/50">{item.count}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </ScrollArea>
                     </CardContent>
                   </Card>
                 </motion.div>
